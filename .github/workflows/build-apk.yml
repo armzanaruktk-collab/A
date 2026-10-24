@@ -1,0 +1,53 @@
+name: Build HamedVpns APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'HamedVpns-build-prepared.zip'
+      - '.github/workflows/build-apk.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Extract Android project from ZIP
+        run: |
+          unzip -q HamedVpns-build-prepared.zip -d "${RUNNER_TEMP}/project"
+          test -f "${RUNNER_TEMP}/project/hamedvpns/gradlew"
+          test -f "${RUNNER_TEMP}/project/hamedvpns/settings.gradle"
+
+      - name: Ensure libv2ray dependency
+        working-directory: ${{ runner.temp }}/project/hamedvpns
+        run: |
+          mkdir -p app/libs
+          if [ ! -s app/libs/libv2ray.aar ]; then
+            curl --fail --location --retry 3               "https://github.com/2dust/AndroidLibXrayLite/releases/download/v26.7.5/libv2ray.aar"               --output app/libs/libv2ray.aar
+          fi
+
+      - name: Build debug APK
+        working-directory: ${{ runner.temp }}/project/hamedvpns
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HamedVpns-debug-APK
+          path: ${{ runner.temp }}/project/hamedvpns/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
