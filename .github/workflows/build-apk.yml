@@ -17,25 +17,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-          cache: gradle
-
       - name: Extract Android project from ZIP
         run: |
           unzip -q HamedVpns-build-prepared.zip -d "${RUNNER_TEMP}/project"
           test -f "${RUNNER_TEMP}/project/hamedvpns/gradlew"
           test -f "${RUNNER_TEMP}/project/hamedvpns/settings.gradle"
 
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
       - name: Ensure libv2ray dependency
         working-directory: ${{ runner.temp }}/project/hamedvpns
         run: |
           mkdir -p app/libs
           if [ ! -s app/libs/libv2ray.aar ]; then
-            curl --fail --location --retry 3               "https://github.com/2dust/AndroidLibXrayLite/releases/download/v26.7.5/libv2ray.aar"               --output app/libs/libv2ray.aar
+            curl --fail --location --retry 3 "https://github.com/2dust/AndroidLibXrayLite/releases/download/v26.7.5/libv2ray.aar" --output app/libs/libv2ray.aar
           fi
 
       - name: Build debug APK
